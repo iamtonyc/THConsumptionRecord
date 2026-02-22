@@ -328,6 +328,25 @@ export default function App() {
 
   const inputClasses = "w-full bg-transparent border-none py-1 px-0 text-xs font-bold focus:ring-0 transition-all placeholder:text-zinc-300";
 
+  const DateInput = ({ value, onChange, required = false }: { value: string, onChange: (val: string) => void, required?: boolean }) => (
+    <div className="relative">
+      <input 
+        type="text"
+        readOnly
+        value={value}
+        placeholder="YYYY-MM-DD"
+        className={inputClasses}
+      />
+      <input 
+        type="date"
+        required={required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 opacity-0 cursor-pointer"
+      />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans pb-12 select-none">
       <div className="h-4 bg-white" />
@@ -375,12 +394,10 @@ export default function App() {
                 <form onSubmit={handleAddTransaction} className="space-y-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                     <FormField label="Date">
-                      <input 
-                        type="date" 
+                      <DateInput 
                         required
                         value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className={inputClasses}
+                        onChange={setDate}
                       />
                     </FormField>
 
@@ -527,19 +544,15 @@ export default function App() {
                 <form onSubmit={handleSearch} className="space-y-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                     <FormField label="From Date">
-                      <input 
-                        type="date" 
+                      <DateInput 
                         value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                        className={inputClasses}
+                        onChange={setFromDate}
                       />
                     </FormField>
                     <FormField label="To Date">
-                      <input 
-                        type="date" 
+                      <DateInput 
                         value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                        className={inputClasses}
+                        onChange={setToDate}
                       />
                     </FormField>
                     <FormField label="Category">
