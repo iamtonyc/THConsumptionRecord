@@ -9,7 +9,8 @@ import {
   ChevronRight,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -121,6 +122,28 @@ export default function App() {
     }
   };
 
+  const handleDeleteTransaction = async (id: number | undefined) => {
+    console.log("Attempting to delete transaction with ID:", id);
+    if (id === undefined) {
+      console.error("Cannot delete: ID is undefined");
+      return;
+    }
+    
+    if (window.confirm('Are you sure you want to delete this record?')) {
+      try {
+        await db.transactions.delete(id);
+        console.log("Successfully deleted transaction:", id);
+        // Force update search results if we are in search tab (though button is hidden there now)
+        if (searchResults) {
+          setSearchResults(prev => prev ? prev.filter(t => t.id !== id) : null);
+        }
+      } catch (error) {
+        console.error("Failed to delete transaction:", error);
+        alert("Failed to delete record: " + (error instanceof Error ? error.message : String(error)));
+      }
+    }
+  };
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     let collection = db.transactions.toCollection();
@@ -223,16 +246,17 @@ export default function App() {
                 { label: 'Vendor', key: 'vendor' as const },
                 { label: 'Amount', key: 'amount' as const },
                 { label: 'Account', key: 'fromAccount' as const },
-                { label: 'Paid By', key: 'paidBy' as const }
+                { label: 'Paid By', key: 'paidBy' as const },
+                ...(activeTab === 'input' ? [{ label: 'Actions', key: 'id' as const }] : [])
               ].map((col) => (
                 <th 
                   key={col.key}
-                  onClick={() => requestSort(col.key)}
-                  className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 border-b border-zinc-100 cursor-pointer hover:bg-zinc-100 transition-colors"
+                  onClick={() => col.label && col.label !== 'Actions' && requestSort(col.key)}
+                  className={`px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 border-b border-zinc-100 ${col.label && col.label !== 'Actions' ? 'cursor-pointer hover:bg-zinc-100' : ''} transition-colors`}
                 >
                   <div className="flex items-center gap-1">
                     {col.label}
-                    <SortIcon columnKey={col.key} />
+                    {col.label && col.label !== 'Actions' && <SortIcon columnKey={col.key} />}
                   </div>
                 </th>
               ))}
@@ -241,7 +265,7 @@ export default function App() {
           <tbody className="divide-y divide-zinc-50">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-zinc-400">
+                <td colSpan={activeTab === 'input' ? 8 : 7} className="px-4 py-12 text-center text-zinc-400">
                   <History className="w-8 h-8 mx-auto mb-2 opacity-10" />
                   <p className="text-xs">No transactions found</p>
                 </td>
@@ -260,6 +284,20 @@ export default function App() {
                   </td>
                   <td className="px-4 py-4 text-xs text-zinc-500">{t.fromAccount}</td>
                   <td className="px-4 py-4 text-xs text-zinc-500">{t.paidBy}</td>
+                  {activeTab === 'input' && (
+                    <td className="px-4 py-4 text-right">
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTransaction(t.id);
+                        }}
+                        className="p-2 rounded-lg text-zinc-300 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
@@ -291,8 +329,22 @@ export default function App() {
                 </div>
               </div>
               <div className="pt-2 border-t border-zinc-50 flex justify-between items-center text-[10px] font-medium text-zinc-400 uppercase tracking-widest">
-                <span>{t.fromAccount}</span>
-                <span>{t.paidBy}</span>
+                <div className="flex gap-4">
+                  <span>{t.fromAccount}</span>
+                  <span>{t.paidBy}</span>
+                </div>
+                {activeTab === 'input' && (
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTransaction(t.id);
+                    }}
+                    className="p-2 rounded-lg text-zinc-400 active:text-red-500 active:bg-red-50 transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))
